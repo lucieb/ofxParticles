@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofxParticleEmitter.h"
+#include "ofxParticleMeshEmitter.h"
 
 inline ofVec3f ofRandVec3f(){
     return ofVec3f(ofRandomf(),ofRandomf(),ofRandomf()).normalize().scale(ofRandomf());
@@ -45,6 +46,46 @@ class ofxParticleSystem {
             totalParticlesEmitted+=src.numPars;
         }
 
+		void addParticles(ofxParticleMeshEmitter & src, ofMesh& mesh){
+
+			int numPars = src.maxParticles-numParticles;
+			int numVertices = mesh.getNumVertices();
+
+			if (mesh.getNumVertices() == 0) return;
+
+            for(int n=0 ; n<numPars ; n++){
+
+				int i = ofRandom(numVertices-1);
+
+				ofVec3f pos = mesh.getVertex(i);
+                ofVec3f vel = src.velocityStart;
+                if(src.positionEnd != src.positionStart || src.velocityStart != src.velocityEnd){
+                    float rf = ofRandomuf();
+                    pos = src.positionStart.interpolated(src.positionEnd, rf);
+                    vel = src.velocityStart.interpolated(src.velocityEnd, rf);
+                }
+                ofVec3f p = pos+ofRandVec3f()*src.posSpread;
+                ofVec3f v = vel+ofRandVec3f()*src.velSpread;
+                float s = src.size+ofRandomf()*src.sizeSpread;
+                float l = src.life+ofRandomf()*src.lifeSpread;
+                ofxParticle * par = new ofxParticle(p,v,s,l);
+                par->rotation = src.rotation+ofRandVec3f()*src.rotSpread;
+                par->rotationalVelocity = src.rotVel+ofRandVec3f()*src.rotVelSpread;
+                par->particleID = totalParticlesEmitted+i;
+                ofColor pColor = src.color;
+                if(src.colorSpread != ofColor(0,0,0,0)){
+                    pColor.r = ofClamp(pColor.r + ofRandomf()*src.colorSpread.r,0,255);
+                    pColor.g = ofClamp(pColor.g + ofRandomf()*src.colorSpread.g,0,255);
+                    pColor.b = ofClamp(pColor.b + ofRandomf()*src.colorSpread.b,0,255);
+                    pColor.a = ofClamp(pColor.a + ofRandomf()*src.colorSpread.a,0,255);
+                }
+                par->color = pColor;
+                particles.push_back(par);
+            }
+            numParticles+=numPars;
+            totalParticlesEmitted+=numPars;
+        }
+            
         void attractTo(ofPoint p, const float accel, const float minDist, const bool consumeParticle){
             for(list<ofxParticle*>::iterator it = particles.begin(); it != particles.end(); it++){
                 (**it).attractTo(p, accel, minDist, consumeParticle);
